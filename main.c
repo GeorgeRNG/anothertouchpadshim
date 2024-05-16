@@ -1,10 +1,10 @@
-#include <assert.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <libevdev-1.0/libevdev/libevdev-uinput.h>
 #include <libevdev-1.0/libevdev/libevdev.h>
 #include <linux/input-event-codes.h>
 #include <linux/input.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -12,7 +12,6 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
-#include <stdbool.h> 
 
 #include <libevdev/libevdev-uinput.h>
 #include <libevdev/libevdev.h>
@@ -62,49 +61,29 @@ int main() {
     return err;
   // Done that.
 
-  // Read from the device.
-  bool left = false;
-  bool right = false;
-  int fingers = 0;
+  int cur = BTN_LEFT;
   do {
     struct input_event ev;
     rc = libevdev_next_event(rdev, LIBEVDEV_READ_FLAG_NORMAL, &ev);
     if (rc == 0) {
-      if (ev.type != EV_ABS)
-        continue;
-      if (ev.code != ABS_MT_TRACKING_ID)
-        continue;
-      if (ev.value == -1)
-        fingers -= 1;
-      else
-        fingers += 1;
-      printf("fingers: %d\n", fingers);
-
-      // Make our events.
-      if (fingers == 0) {
-        if(left) {
-          libevdev_uinput_write_event(uidev, EV_KEY, BTN_LEFT, 0);
-          left = false;
+      if (ev.type == EV_ABS) {
+        if (ev.code == ABS_MT_SLOT) {
+          if (ev.value == 0) {
+            cur = BTN_LEFT;
+          }
+          if (ev.value == 1) {
+            cur = BTN_RIGHT;
+          }
         }
-        libevdev_uinput_write_event(uidev, EV_SYN, SYN_REPORT, 0);
-      }
-      if (fingers == 1) {
-        if(!left) {
-          libevdev_uinput_write_event(uidev, EV_KEY, BTN_LEFT, 1);
-          left = true;
+        if (ev.code == ABS_MT_TRACKING_ID) {
+          if (ev.value == -1) {
+            libevdev_uinput_write_event(uidev, EV_KEY, cur, 0);
+          }
+          else {
+            libevdev_uinput_write_event(uidev, EV_KEY, cur, 1);
+          }
+          libevdev_uinput_write_event(uidev, EV_SYN, SYN_REPORT, 0);
         }
-        if(right) {
-          libevdev_uinput_write_event(uidev, EV_KEY, BTN_RIGHT, 0);
-          right = false;
-        }
-        libevdev_uinput_write_event(uidev, EV_SYN, SYN_REPORT, 0);
-      }
-      if (fingers == 2) {
-        if(!right) {
-          libevdev_uinput_write_event(uidev, EV_KEY, BTN_RIGHT, 1);
-          right = true;
-        }
-        libevdev_uinput_write_event(uidev, EV_SYN, SYN_REPORT, 0);
       }
     }
   } while (rc == 1 || rc == 0 || rc == -EAGAIN);
