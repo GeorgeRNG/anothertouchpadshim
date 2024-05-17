@@ -16,16 +16,26 @@
 #include <libevdev/libevdev-uinput.h>
 #include <libevdev/libevdev.h>
 
-int main() {
+int main( int argc, char *argv[] ) {
   // Open the event device.
   struct libevdev *rdev = NULL;
   int fd;
   int rc = 1;
 
-  fd = open("/dev/input/event7", O_RDONLY);
+  if(argc != 2) {
+    fprintf(stderr, "Use exactly one argument for the event file.\nYou can use evtest to find where devices are.\n");
+    exit(1);
+  }
+  printf("%s\n",argv[1]);
+
+  fd = open(argv[1], O_RDONLY);
+  if(fd == -1) {
+    printf("Couldn't open file at %s (%d)", argv[1],fd);
+    exit(1);
+  }
   rc = libevdev_new_from_fd(fd, &rdev);
   if (rc < 0) {
-    fprintf(stderr, "Failed to init libevdev (%s)\n", strerror(-rc));
+    fprintf(stderr, "Failed to init libevdev (%s)\nYou can use evtest to find where devices are.\n", strerror(-rc));
     exit(1);
   }
   printf("Input device name: \"%s\"\n", libevdev_get_name(rdev));
