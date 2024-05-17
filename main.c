@@ -42,26 +42,32 @@ int main() {
   }
   // Done that.
 
+  const int DEFAULT = KEY_F13;
+  const int OFF = KEY_F14;
+
   // Create an output device.
   int err;
   struct libevdev *wdev;
   struct libevdev_uinput *uidev;
   wdev = libevdev_new();
   libevdev_set_name(wdev, "test device");
-  libevdev_enable_event_type(wdev, EV_REL);
-  libevdev_enable_event_code(wdev, EV_REL, REL_X, NULL);
-  libevdev_enable_event_code(wdev, EV_REL, REL_Y, NULL);
+  // libevdev_enable_event_type(wdev, EV_REL);
+  // libevdev_enable_event_code(wdev, EV_REL, REL_X, NULL);
+  // libevdev_enable_event_code(wdev, EV_REL, REL_Y, NULL);
   libevdev_enable_event_type(wdev, EV_KEY);
-  libevdev_enable_event_code(wdev, EV_KEY, BTN_LEFT, NULL);
-  libevdev_enable_event_code(wdev, EV_KEY, BTN_MIDDLE, NULL);
-  libevdev_enable_event_code(wdev, EV_KEY, BTN_RIGHT, NULL);
+  // libevdev_enable_event_code(wdev, EV_KEY, BTN_LEFT, NULL);
+  // libevdev_enable_event_code(wdev, EV_KEY, BTN_MIDDLE, NULL);
+  // libevdev_enable_event_code(wdev, EV_KEY, BTN_RIGHT, NULL);
+  libevdev_enable_event_code(wdev, EV_KEY, DEFAULT, NULL);
+  libevdev_enable_event_code(wdev, EV_KEY, OFF, NULL);
   err = libevdev_uinput_create_from_device(wdev, LIBEVDEV_UINPUT_OPEN_MANAGED,
                                            &uidev);
   if (err != 0)
     return err;
   // Done that.
 
-  int cur = BTN_LEFT;
+  int cur = DEFAULT;
+  bool hasSlot = false;
   do {
     struct input_event ev;
     rc = libevdev_next_event(rdev, LIBEVDEV_READ_FLAG_NORMAL, &ev);
@@ -69,10 +75,10 @@ int main() {
       if (ev.type == EV_ABS) {
         if (ev.code == ABS_MT_SLOT) {
           if (ev.value == 0) {
-            cur = BTN_LEFT;
+            cur = DEFAULT;
           }
           if (ev.value == 1) {
-            cur = BTN_RIGHT;
+            cur = OFF;
           }
         }
         if (ev.code == ABS_MT_TRACKING_ID) {
